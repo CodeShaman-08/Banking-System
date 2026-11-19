@@ -4,6 +4,9 @@ const toast = document.querySelector("#toast");
 const SESSION_KEY = "commonplace.session";
 const ACCOUNTS_KEY = "commonplace.accounts";
 
+// Set <meta name="api-base" content="https://your-api.onrender.com"> to point the UI at a hosted backend.
+const API_BASE = (document.querySelector('meta[name="api-base"]')?.content || "").replace(/\/+$/, "");
+
 let activeMode = "login";
 let toastTimer;
 
@@ -49,14 +52,19 @@ function showToast(message, isError = false) {
 }
 
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, {
+  const response = await fetch(`${API_BASE}${url}`, {
     ...options,
-    credentials: "same-origin",
+    credentials: API_BASE ? "include" : "same-origin",
     headers: { "Content-Type": "application/json", ...(options.headers || {}) },
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok)
-    throw new Error(body.message || "Something went wrong. Please try again.");
+    throw new Error(
+      body.message ||
+        (response.status === 404 && !API_BASE
+          ? "Backend not connected. This UI is hosted statically; set the api-base meta tag."
+          : "Something went wrong. Please try again."),
+    );
   return body;
 }
 
