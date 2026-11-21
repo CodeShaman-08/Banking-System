@@ -1,10 +1,22 @@
 const accountModel = require("../models/account.model");
+const { fundNewAccount } = require("../services/demoFunding");
 
 async function createAccountController(req, res) {
   const user = req.user;
   const account = await accountModel.create({
     user: user._id,
   });
+
+  // Optional demo mode: start new accounts with test money so visitors can
+  // try a transfer without an admin funding step.
+  if (process.env.DEMO_FUNDING === "true") {
+    try {
+      await fundNewAccount(account._id);
+    } catch (error) {
+      console.error("demo funding failed:", error.message);
+    }
+  }
+
   res.status(201).json({
     account,
   });
